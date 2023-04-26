@@ -4,7 +4,7 @@ public class AppSettings
 {
     public string BotToken { get; set; } = default!;
     public string MongoDBURL { get; set; } = default!;
-    public ulong LogChannel { get; set; }
-    public ulong KogCommandChannel { get; set; }
+    public ulong LogChannelId { get; set; }
+    public ulong KogCommandChannelId { get; set; }
 
 }
