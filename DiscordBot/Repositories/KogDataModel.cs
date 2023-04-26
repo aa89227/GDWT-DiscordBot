@@ -28,3 +28,5 @@ public class KogMap
     public string Author { get; set; } = default!;
     public string ReleasedTime { get; set; } = default!;
 }
+
+public record KogPlayerInfo(string Name, int Rank, int Points, int SeasonPoints); 

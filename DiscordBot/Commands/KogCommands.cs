@@ -257,21 +257,21 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         else
         {
             // 如果審核成功，顯示「已通過」的訊息
-            embedBuilder
-                .WithTitle(status);
+            embedBuilder.WithTitle(status);
             if (isApproved)
             {
-                // 給使用者加上 "KoG" 的身分組
+                // 給註冊者加上 "KoG" 的身分組
                 var role = Context.Guild!.Roles.FirstOrDefault(x => x.Name == "KoG");
                 if (role != null)
                 {
-                    await Context.Guild.GetUser(Context.User.Id).AddRoleAsync(role);
+                    var user = Context.Guild.GetUser(_repository.GetDiscordUserIdByRegistrationId(registrationId));
+                    await user.AddRoleAsync(role);
 
                     // 在歡迎頻道 歡迎成員
                     var welcomeChannel = Context.Guild.GetTextChannel(_settings.KogCommandChannelId);
                     if (welcomeChannel != null)
                     {
-                        await welcomeChannel.SendMessageAsync($"{Context.User.Mention}, Welcome to KoG in 𝔾ძωт!");
+                        await welcomeChannel.SendMessageAsync($"{user.Mention}, Welcome to KoG in 𝔾ძωт!");
                     }
                 }
             }
@@ -288,30 +288,47 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
 
     #endregion 註冊處理
 
+    #region 搜尋玩家資料
+
+    [RequireRole("KoG")]
+    [SlashCommand("player-info", "搜尋玩家資料")]
+    public async Task SearchPlayerInfo(string username_in_kog)
+    {
+        var playerInfo = await _repository.GetPlayerInfoByUserNameInKog(username_in_kog);
+        if (playerInfo == null)
+        {
+            await RespondAsync("找不到玩家資料，有可能是該玩家未註冊 𝔾ძωт KoG", ephemeral: true);
+            return;
+        }
+        var embed = new EmbedBuilder()
+                .WithTitle(username_in_kog)
+                .WithDescription($"""
+                                    Rank：{playerInfo.Rank}
+                                    Points：{playerInfo.Points + playerInfo.SeasonPoints}（{playerInfo.Points} + {playerInfo.SeasonPoints}）
+                                    """
+                )
+                .WithColor(Color.Purple)
+                .Build();
+        await RespondAsync(embed: embed);
+    }
+
+    #endregion 搜尋玩家資料
+
     #region 搜尋多個玩家之間未完成的地圖
 
     /// <summary>
     /// 搜尋多個玩家之間未完成的地圖，至多可以支援25人。
     /// 需要具備 "KoG" 角色。
-    /// 限定只能在 KogCommandChannelId 頻道使用。
     /// </summary>
     /// <param name="difficulty">難度</param>
     /// <param name="star">星級</param>
     [RequireRole("KoG")]
-    [SlashCommand("unfinished_map_between_players", "(KoG Only)搜尋多個玩家之間未完成的地圖，至多可以支援25人")]
+    [SlashCommand("unfinished_map_between_players", "搜尋多個玩家之間未完成的地圖，至多可以支援25人")]
     public async Task SearchUnfinishedMapBetweenPlayer(
         [Summary(description: "難度")] Difficulty difficulty,
         [Summary(description: "星級")] Star star)
     {
         await DeferAsync(ephemeral: true);
-
-        // 限制在某個頻道
-        if (Context.Channel.Id != _settings.KogCommandChannelId)
-        {
-            var channel = Context.Guild!.GetTextChannel(_settings.KogCommandChannelId);
-            await ModifyOriginalResponseAsync(x => x.Content = $"請在{channel.Mention}使用此指令"); // mention channel
-            return;
-        }
 
         await ModifyOriginalResponseAsync(x =>
         {

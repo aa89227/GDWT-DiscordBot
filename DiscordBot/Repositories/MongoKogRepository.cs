@@ -206,6 +206,17 @@ public class MongoKogRepository
         return players.Select(x => x.UserNameInKog).ToList();
     }
 
+    public async Task<KogPlayerInfo?> GetPlayerInfoByUserNameInKog(string usernameInKog)
+    {
+        var player = await KogPlayers.Find(x => x.UserNameInKog == usernameInKog).FirstOrDefaultAsync();
+        _logger.LogInformation($"Get player {usernameInKog}");
+        if (player is null)
+        {
+            return null;
+        }
+        return new KogPlayerInfo(usernameInKog, player.Points.Rank, player.Points.Points,  player.Points.Seasonpoints);
+    }
+
     /// <summary>
     /// 找到 <paramref name="players"/> 之間未完成的地圖，且 <paramref name="difficulty"/> 為指定難度
     /// </summary>
@@ -236,6 +247,12 @@ public class MongoKogRepository
                                             .ToArray();
         _logger.LogInformation($"Get {repeatedMaps.Length} repeated maps");
         return repeatedMaps;
+    }
+
+    public ulong GetDiscordUserIdByRegistrationId(string registrationId)
+    {
+        var registration = KogPlayerRegistrations.Find(x => x.Id == new ObjectId(registrationId)).FirstOrDefault();
+        return registration is null ? throw new ArgumentException($"找不到 Id 為 {registrationId} 的註冊申請") : registration.DiscordUserId;
     }
 
     private List<KogMap> GetUnfinishedMapsByPlayer(string playerName, string difficulty)
