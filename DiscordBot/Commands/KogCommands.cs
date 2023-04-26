@@ -126,7 +126,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("unregister", "取消註冊")]
     public async Task Unregister()
     {
-        await DeferAsync();
+        await DeferAsync(ephemeral: true);
         var result = await _repository.UnregisterUser(Context.User.Id);
         if (!result.IsSuccess)
         {
@@ -285,7 +285,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
 
             x.Content = $"""
                         {message.Content}
-                        {lineCount - 1}. {players[0]}
+                        {lineCount - 2}. {players[0]}
                         """;
 
             x.Components = BuildSelectionMenu(playerlist.Concat(new[] { players[0] }).ToArray()).Build();

@@ -77,6 +77,7 @@ public class MongoKogRepository
         {
             return new RegisterationResult("你沒有註冊過");
         }
+        _logger.LogInformation($"User {id} unregistered");
         return new();
     }
     public record RegisterationResult(string? ErrorMessage = null)
@@ -144,6 +145,7 @@ public class MongoKogRepository
             FinishedMaps = playerData!.finishedMaps.ToList(),
             Points = playerData!.points,
         });
+        _logger.LogInformation($"User {registration.DiscordUserId} registered as {registration.UserNameInKog}");
         return new();
     }
 
@@ -167,6 +169,7 @@ public class MongoKogRepository
                 Rejecter = rejecter,
             });
         await KogPlayerRegistrations.UpdateOneAsync(x => x.Id == new ObjectId(registerationId), updateDefinition);
+        _logger.LogInformation($"User {registration.DiscordUserId} registration rejected");
         return new();
     }
     public async Task<ReviewResult> DeleteRegistration(ulong id, string registrationId)
@@ -176,6 +179,7 @@ public class MongoKogRepository
         {
             return new ReviewResult("找不到此註冊申請");
         }
+        _logger.LogInformation($"User {id} registration deleted");
         return new();
     }
 
@@ -189,6 +193,7 @@ public class MongoKogRepository
     public List<string> GetRegisteredPlayers()
     {
         var players = KogPlayers.Find(FilterDefinition<KogPlayer>.Empty).ToList();
+        _logger.LogInformation($"Get {players.Count} registered players");
         return players.Select(x => x.UserNameInKog).ToList();
     }
 
@@ -220,6 +225,7 @@ public class MongoKogRepository
                                                 };
                                             })
                                             .ToArray();
+        _logger.LogInformation($"Get {repeatedMaps.Length} repeated maps");
         return repeatedMaps;
     }
 
