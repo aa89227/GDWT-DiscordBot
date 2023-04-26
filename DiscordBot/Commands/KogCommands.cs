@@ -19,7 +19,9 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         _repository = repository;
         _settings = settings.Value;
     }
+
     #region 更新資料
+
     /// <summary>
     /// 更新所有成員資料，此指令只限擁有者使用
     /// </summary>
@@ -31,6 +33,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         await _repository.UpdateAllUserData();
         await ModifyOriginalResponseAsync(x => x.Content = "成員資料更新成功!");
     }
+
     /// <summary>
     /// 更新地圖資料，此指令只限擁有者使用
     /// </summary>
@@ -42,9 +45,11 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         await _repository.UpdateMapData();
         await ModifyOriginalResponseAsync(x => x.Content = "地圖資料更新成功!");
     }
-    #endregion
+
+    #endregion 更新資料
 
     #region 註冊
+
     /// <summary>
     /// 註冊指令，用於註冊使用者
     /// </summary>
@@ -52,7 +57,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("register", "註冊")]
     public async Task Register(string username_in_kog)
     {
-        await DeferAsync(ephemeral:true);
+        await DeferAsync(ephemeral: true);
         var originalResponse = await GetOriginalResponseAsync();
         var result = await _repository.RegisterUser(Context.User.Id, username_in_kog);
         if (!result.IsSuccess)
@@ -74,6 +79,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         });
         await HandleRegistrationSuccess(username_in_kog, result, logChannel, kogUserData);
     }
+
     /// <summary>
     /// 處理註冊成功後的相關操作，包括發送訊息到 <paramref name="logChannel"/> 和建立待審核資料。
     /// </summary>
@@ -115,7 +121,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
 
         await logChannel!.SendMessageAsync(embed: embed, components: components);
     }
-    
+
     /// <summary>
     /// 處理註冊失敗的事件，為了防止使用者頻繁的進行失敗的註冊，必須等管理員刪除註冊資料才可以重新進行註冊
     /// </summary>
@@ -168,9 +174,11 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         await user!.RemoveRoleAsync(role);
         await ModifyOriginalResponseAsync(x => x.Content = $"取消註冊成功!");
     }
-    #endregion
+
+    #endregion 註冊
 
     #region 註冊處理
+
     /// <summary>
     /// 刪除註冊訊息 ComponentInteraction。當使用者按下特定自訂 ID 的按鈕時觸發。
     /// </summary>
@@ -277,9 +285,11 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
             x.Components = null;
         });
     }
-    #endregion
+
+    #endregion 註冊處理
 
     #region 搜尋多個玩家之間未完成的地圖
+
     /// <summary>
     /// 搜尋多個玩家之間未完成的地圖，至多可以支援25人。
     /// 需要具備 "KoG" 角色。
@@ -502,5 +512,6 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
 
         return (difficulty, star, players);
     }
-    #endregion
+
+    #endregion 搜尋多個玩家之間未完成的地圖
 }

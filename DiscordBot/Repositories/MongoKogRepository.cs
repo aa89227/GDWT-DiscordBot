@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -41,6 +40,7 @@ public class MongoKogRepository
     }
 
     #region 註冊
+
     public async Task<RegisterationResult> RegisterUser(ulong discordUserId, string userNameInKog)
     {
         // 檢查是否已經註冊過，找 KogPlayers 及 KogPlayerRegisterations 裡面有沒有這個 DiscordUserId
@@ -66,10 +66,12 @@ public class MongoKogRepository
             UserNameInKog = userNameInKog,
         };
         await KogPlayerRegistrations.InsertOneAsync(doc);
-        return new() {
+        return new()
+        {
             RegisterationId = doc.Id.ToString()
         };
     }
+
     public async Task<RegisterationResult> UnregisterUser(ulong id)
     {
         var result = await KogPlayers.DeleteOneAsync(x => x.DiscordUserId == id);
@@ -80,13 +82,17 @@ public class MongoKogRepository
         _logger.LogInformation($"User {id} unregistered");
         return new();
     }
+
     public record RegisterationResult(string? ErrorMessage = null)
     {
         public bool IsSuccess => ErrorMessage is null;
         public string? RegisterationId = null;
     }
-    #endregion
+
+    #endregion 註冊
+
     #region 審核
+
     /// <summary>
     /// 把 <paramref name="id"/> 的註冊申請通過，並把玩家加入 KogPlayers 資料庫
     /// </summary>
@@ -119,10 +125,10 @@ public class MongoKogRepository
             return new($"名稱【{registration.UserNameInKog}】已經被使用了");
         }
         // 檢查此名稱有沒有分數
-        KogWebCrawler.KogUserData ? playerData;
+        KogWebCrawler.KogUserData? playerData;
         try
         {
-             playerData = await KogWebCrawler.GetUserDataAsync(registration.UserNameInKog);
+            playerData = await KogWebCrawler.GetUserDataAsync(registration.UserNameInKog);
         }
         catch
         {
@@ -172,6 +178,7 @@ public class MongoKogRepository
         _logger.LogInformation($"User {registration.DiscordUserId} registration rejected");
         return new();
     }
+
     public async Task<ReviewResult> DeleteRegistration(ulong id, string registrationId)
     {
         var result = await KogPlayerRegistrations.DeleteOneAsync(x => x.Id == new ObjectId(registrationId) && x.DiscordUserId == id);
@@ -188,8 +195,10 @@ public class MongoKogRepository
         public bool IsSuccess => ErrorMessage is null;
     }
 
-    #endregion
+    #endregion 審核
+
     #region 查詢資料
+
     public List<string> GetRegisteredPlayers()
     {
         var players = KogPlayers.Find(FilterDefinition<KogPlayer>.Empty).ToList();
@@ -252,7 +261,9 @@ public class MongoKogRepository
         }
         throw new ArgumentException($"找不到名為 {playerName} 的玩家");
     }
-    #endregion
+
+    #endregion 查詢資料
+
     #region 更新資料
 
     public async Task UpdateAllUserData()
@@ -265,6 +276,7 @@ public class MongoKogRepository
         });
         await Task.WhenAll(tasks);
     }
+
     private async Task UpdateUserDataByPlayerName(string playerName)
     {
         var userData = await KogWebCrawler.GetUserDataAsync(playerName) ?? throw new ArgumentException($"無法拿到名稱【{playerName}】的玩家資料");
@@ -300,8 +312,11 @@ public class MongoKogRepository
             _logger.LogInformation($"Map {map.MapName} data has been updated.");
         }
     }
-    #endregion
+
+    #endregion 更新資料
+
     #region 資料庫物件
+
     private class KogPlayer
     {
         [BsonId]
@@ -330,16 +345,18 @@ public class MongoKogRepository
     {
         [BsonId]
         public ObjectId Id { get; set; }
+
         public ulong DiscordUserId { get; set; }
         public string UserNameInKog { get; set; } = default!;
         public RegisterationObject? Registeration { get; set; } = default!;
-        
     }
+
     private class RegisterationObject
     {
         public bool IsApproved { get; set; }
         public ulong? Rejecter { get; set; }
         public ulong? Approver { get; set; }
     }
-    #endregion
+
+    #endregion 資料庫物件
 }
