@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using DiscordBot;
+using DiscordBot.Common;
 using DiscordBot.Repositories;
 using DiscordBot.Services;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
+using MongoDB.Driver;
 using IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
@@ -30,8 +31,45 @@ using IHost host = Host.CreateDefaultBuilder(args)
         services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()));
         services.AddSingleton<InteractionHandler>();
         services.AddSingleton<CommandService>();
+        services.AddSingleton(x =>
+        {
+            var appSettings = x.GetRequiredService<IOptions<AppSettings>>().Value;
+            var _logger = x.GetRequiredService<ILogger<Program>>();
+            try
+            {
+                var client = new MongoClient(appSettings.MongoDBURL);
+                _logger.LogInformation("Successfully connected to mongo database KingOfGores");
+                return client;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to connect to mongo database");
+                throw;
+            }
+        });
         services.AddSingleton<MongoKogRepository>();
-        services.AddLogging();
+        services.AddLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddConsole();
+            logging.AddFile(o =>
+            {
+                var logsDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+                if (!Directory.Exists(logsDirectory))
+                {
+                    Directory.CreateDirectory(logsDirectory);
+                }
+                o.RootPath = AppContext.BaseDirectory;
+                o.BasePath = "logs";
+                o.MaxFileSize = 10_000_000;
+                o.FileAccessMode = Karambolo.Extensions.Logging.File.LogFileAccessMode.KeepOpenAndAutoFlush;
+                o.Files = new[]
+                {
+                    new Karambolo.Extensions.Logging.File.LogFileOptions { Path = "<date:yyyy-MM-dd>.log",  }
+                };
+
+            });
+        });
         services.AddHostedService<ScheduledService>();
     })
     .Build();
@@ -75,7 +113,7 @@ async Task RunAsync(IHost host)
         }
         catch (Exception ex)
         {
-            logger.LogError(ex.Message);
+            logger.LogError("{Error Message}", ex.Message);
         }
     };
     await client.LoginAsync(TokenType.Bot, settings.BotToken);

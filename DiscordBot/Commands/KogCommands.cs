@@ -106,7 +106,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
             .WithCustomId($"kog-register-reject-{result.RegisterationId}")
             .WithStyle(ButtonStyle.Danger);
         var checkButton = new ButtonBuilder()
-            .WithUrl($"https://kog.tw/#p=players&player={username_in_kog}")
+            .WithUrl($"https://kog.tw/#p=players&player={Uri.EscapeDataString(username_in_kog)}")
             .WithLabel("查看玩家資訊")
             .WithStyle(ButtonStyle.Link);
         var components = new ComponentBuilder()
@@ -120,8 +120,8 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
                             RegistrationId：{result.RegisterationId}
                             User：{Context.User.Mention}
                             Name：{username_in_kog}
-                            Rank：{kogUserData!.points.Rank}
-                            Points：{kogUserData.points.TPoints}（{kogUserData.points.Points} + {kogUserData.points.Seasonpoints}）
+                            Rank：{kogUserData!.Points.Rank}
+                            Points：{kogUserData.Points.TPoints}（{kogUserData.Points.Points} + {kogUserData.Points.Seasonpoints}）
                             """)
             .WithColor(Color.Blue)
             .Build();

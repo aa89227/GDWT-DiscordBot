@@ -8,35 +8,24 @@ namespace DiscordBot.Repositories;
 
 public class MongoKogRepository
 {
-    private readonly AppSettings _settings;
     private readonly ILogger<MongoKogRepository> _logger;
-    private readonly IMongoDatabase _database;
+    private readonly IMongoClient _client;
+    private IMongoDatabase Database => _client.GetDatabase("KingOfGores");
 
     private IMongoCollection<KogPlayer> KogPlayers => GetCollection<KogPlayer>("KogPlayers");
     private IMongoCollection<KogMap> KogMaps => GetCollection<KogMap>("KogMaps");
     private IMongoCollection<KogPlayerRegisteration> KogPlayerRegistrations => GetCollection<KogPlayerRegisteration>("KogPlayerRegisterations");
 
-    public MongoKogRepository(IOptions<AppSettings> settings, ILogger<MongoKogRepository> logger)
+    public MongoKogRepository(MongoClient client, ILogger<MongoKogRepository> logger)
     {
-        _settings = settings.Value;
         _logger = logger;
-        try
-        {
-            var client = new MongoClient(_settings.MongoDBURL);
-            _database = client.GetDatabase("KingOfGores");
-            _logger.LogInformation("Successfully connected to mongo database KingOfGores");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to connect to mongo database");
-            throw;
-        }
+        _client = client;
     }
 
     public IMongoCollection<T> GetCollection<T>(string name)
     {
         // Access a collection
-        return _database.GetCollection<T>(name);
+        return Database.GetCollection<T>(name);
     }
 
     #region 註冊
@@ -47,7 +36,7 @@ public class MongoKogRepository
         var player = KogPlayers.Find(x => x.DiscordUserId == discordUserId).FirstOrDefault();
         if (player is not null)
         {
-            return new RegisterationResult("你已經註冊過了，若想重新註冊，請聯繫管理員");
+            return new RegisterationResult("你已經註冊過了，若想重新註冊，請先取消註冊");
         }
         var registration = KogPlayerRegistrations.Find(x => x.DiscordUserId == discordUserId).FirstOrDefault();
         if (registration is not null && registration.Registeration is null)
@@ -79,7 +68,7 @@ public class MongoKogRepository
         {
             return new RegisterationResult("你沒有註冊過");
         }
-        _logger.LogInformation($"User {id} unregistered");
+        _logger.LogInformation("User {id} unregistered", id);
         return new();
     }
 
@@ -132,7 +121,7 @@ public class MongoKogRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Failed to get user data of {registration.UserNameInKog}");
+            _logger.LogError(ex, "Failed to get user Data of {UserNameInKog}", registration.UserNameInKog);
             return new($"名稱【{registration.UserNameInKog}】無法被註冊");
         }
         // 更改註冊申請，將 <see cref="KogPlayerRegisteration.Approver"/> 設為 <paramref name="approver"/>，並將 <see cref="KogPlayerRegisteration.IsApproved"/> 設為 true
@@ -149,10 +138,10 @@ public class MongoKogRepository
         {
             DiscordUserId = registration.DiscordUserId,
             UserNameInKog = registration.UserNameInKog,
-            FinishedMaps = playerData!.finishedMaps.ToList(),
-            Points = playerData!.points,
+            FinishedMaps = playerData!.FinishedMaps.ToList(),
+            Points = playerData!.Points,
         });
-        _logger.LogInformation($"User {registration.DiscordUserId} registered as {registration.UserNameInKog}");
+        _logger.LogInformation("User {DiscordUserId} registered as {UserNameInKog}", registration.DiscordUserId, registration.UserNameInKog);
         return new();
     }
 
@@ -176,7 +165,7 @@ public class MongoKogRepository
                 Rejecter = rejecter,
             });
         await KogPlayerRegistrations.UpdateOneAsync(x => x.Id == new ObjectId(registerationId), updateDefinition);
-        _logger.LogInformation($"User {registration.DiscordUserId} registration rejected");
+        _logger.LogInformation("User {registration.DiscordUserId} registration rejected", registration.DiscordUserId);
         return new();
     }
 
@@ -187,7 +176,7 @@ public class MongoKogRepository
         {
             return new ReviewResult("找不到此註冊申請");
         }
-        _logger.LogInformation($"User {id} registration deleted");
+        _logger.LogInformation("User {id} registration deleted", id);
         return new();
     }
 
@@ -203,14 +192,14 @@ public class MongoKogRepository
     public List<string> GetRegisteredPlayers()
     {
         var players = KogPlayers.Find(FilterDefinition<KogPlayer>.Empty).ToList();
-        _logger.LogInformation($"Get {players.Count} registered players");
+        _logger.LogInformation("Get {Count} registered players", players.Count);
         return players.Select(x => x.UserNameInKog).ToList();
     }
 
     public async Task<KogPlayerInfo?> GetPlayerInfoByUserNameInKog(string usernameInKog)
     {
         var player = await KogPlayers.Find(x => x.UserNameInKog == usernameInKog).FirstOrDefaultAsync();
-        _logger.LogInformation($"Get player {usernameInKog}");
+        _logger.LogInformation("Get player {usernameInKog}", usernameInKog);
         if (player is null)
         {
             return null;
@@ -246,7 +235,7 @@ public class MongoKogRepository
                                                 };
                                             })
                                             .ToArray();
-        _logger.LogInformation($"Get {repeatedMaps.Length} repeated maps");
+        _logger.LogInformation("Get {Length} repeated maps", repeatedMaps.Length);
         return repeatedMaps;
     }
 
@@ -300,16 +289,16 @@ public class MongoKogRepository
         var userData = await KogWebCrawler.GetUserDataAsync(playerName) ?? throw new ArgumentException($"無法拿到名稱【{playerName}】的玩家資料");
         var filter = Builders<KogPlayer>.Filter.Eq(p => p.UserNameInKog, playerName);
         var update = Builders<KogPlayer>.Update
-            .Set(p => p.Points, userData.points)
-            .Set(p => p.FinishedMaps, userData.finishedMaps.ToList());
+            .Set(p => p.Points, userData.Points)
+            .Set(p => p.FinishedMaps, userData.FinishedMaps.ToList());
         var result = await KogPlayers.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
         if (result != null)
         {
-            _logger.LogInformation($"Player {playerName} data has been updated.");
+            _logger.LogInformation("Player {playerName} Data has been updated.", playerName);
         }
         else
         {
-            _logger.LogWarning($"Player {playerName} not found in database.");
+            _logger.LogWarning("Player {playerName} not found in database.", playerName);
         }
     }
 
@@ -327,7 +316,7 @@ public class MongoKogRepository
                 .Set(m => m.Author, map.Author)
                 .Set(m => m.ReleasedTime, map.ReleasedTime);
             await KogMaps.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = true });
-            _logger.LogInformation($"Map {map.MapName} data has been updated.");
+            _logger.LogInformation("Map {MapName} Data has been updated.", map.MapName);
         }
     }
 

@@ -1,7 +1,7 @@
-﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
-using DiscordBot.Repositories;
+﻿using DiscordBot.Repositories;
 using HtmlAgilityPack;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DiscordBot;
 
@@ -9,19 +9,26 @@ public class KogWebCrawler
 {
     public static async Task<KogUserData?> GetUserDataAsync(string playerName)
     {
+        // 要先打一次get api，不然kog的post api不會動
+        var requestData = new { type = "players", player = playerName };
+        var jsonContent = JsonSerializer.Serialize(requestData);
+        string responseJson = await MakePostRequestAsync(jsonContent);
         try
         {
-            // 要先打一次get api，不然kog的post api不會動
-            await MakeGetRequestAsync($"https://kog.tw/get.php?p=players&p=players&player={playerName}"); 
-            var requestData = new { type = "players", player = playerName };
-            var jsonContent = JsonSerializer.Serialize(requestData);
-            var responseJson = await MakePostRequestAsync(jsonContent);
-            var responseData = JsonSerializer.Deserialize<Response>(responseJson);
-            var data = JsonSerializer.Deserialize<KogUserData>(responseData!.data)!;
+            Response? response = JsonSerializer.Deserialize<Response>(responseJson);
+            KogUserData data = JsonSerializer.Deserialize<KogUserData>(response!.Data)!;
             return data;
         }
-        catch
+        catch (JsonException ex) 
         {
+            if (ex.InnerException!.Message.Contains("Cannot get the value of a token type 'StartArray' as a string."))
+            {
+                await MakeGetRequestAsync($"https://kog.tw/get.php?p=players&p=players&player={playerName}");
+                responseJson = await MakePostRequestAsync(jsonContent);
+                Response? response = JsonSerializer.Deserialize<Response>(responseJson);
+                KogUserData data = JsonSerializer.Deserialize<KogUserData>(response!.Data)!;
+                return data;
+            }
             throw;
         }
     }
@@ -53,7 +60,7 @@ public class KogWebCrawler
 
     private static List<KogMap> ParseMapPage(string html)
     {
-        HtmlDocument doc = new HtmlDocument();
+        var doc = new HtmlDocument();
         doc.LoadHtml(html);
 
         List<KogMap> mapList = new();
@@ -77,7 +84,7 @@ public class KogWebCrawler
             map.Star = stars.Count(s => s.HasClass("bi-star-fill"));
 
             map.Difficulty = ul.SelectSingleNode(".//li[2]").InnerText.Trim().Split()[0];
-            map.Points = int.Parse(ul.SelectSingleNode(".//li[3]").InnerText.Replace("points", "").Trim().Split()[0]);
+            map.Points = int.Parse(ul.SelectSingleNode(".//li[3]").InnerText.Replace("Points", "").Trim().Split()[0]);
             map.Author = ul.SelectSingleNode(".//li[4]").InnerText.Trim();
 
             // 從HTML代碼中解析地圖發布時間
@@ -92,13 +99,17 @@ public class KogWebCrawler
 
     public class KogUserData
     {
-        public PointType points { get; set; } = default!;
-        public FinishedMap[] finishedMaps { get; set; } = default!;
+        [JsonPropertyName("points")]
+        public PointType Points { get; set; } = default!;
+        [JsonPropertyName("finishedMaps")]
+        public FinishedMap[] FinishedMaps { get; set; } = default!;
     }
 
     public class Response
     {
-        public int status { get; set; }
-        public string data { get; set; } = default!;
+        [JsonPropertyName("status")]
+        public int Status { get; set; }
+        [JsonPropertyName("data")]
+        public string Data { get; set; } = default!;
     }
 }

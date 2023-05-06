@@ -1,10 +1,11 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using DiscordBot;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Reflection;
+
+namespace DiscordBot.Common;
 
 public class InteractionHandler
 {
@@ -46,7 +47,7 @@ public class InteractionHandler
             var result = await _commands.ExecuteCommandAsync(context, _services);
             if (!result.IsSuccess)
             {
-                _logger.LogError(result.ErrorReason);
+                _logger.LogError("{Error Reason}", result.ErrorReason);
             }
         }
         catch (Exception ex)
