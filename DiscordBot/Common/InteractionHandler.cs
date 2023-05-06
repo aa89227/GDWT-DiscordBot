@@ -29,6 +29,18 @@ public class InteractionHandler
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
         _client.InteractionCreated += HandleInteractionAsync;
+        _commands.SlashCommandExecuted += SlashCommandExecuted;
+        _commands.ContextCommandExecuted += ContextCommandExecuted;
+        _commands.ComponentCommandExecuted += ComponentCommandExecuted;
+    }
+    private static Task ComponentCommandExecuted(ComponentCommandInfo arg1, IInteractionContext arg2, IResult arg3) => Task.CompletedTask;
+
+    private static Task ContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2, IResult arg3) => Task.CompletedTask;
+
+    private static async Task SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
+    {
+        if (arg3 is { IsSuccess: false, Error: InteractionCommandError.UnmetPrecondition })
+            await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
     }
 
     private async Task HandleInteractionAsync(SocketInteraction interaction)
