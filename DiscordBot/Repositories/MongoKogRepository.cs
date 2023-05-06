@@ -268,6 +268,19 @@ public class MongoKogRepository
         throw new ArgumentException($"找不到名為 {playerName} 的玩家");
     }
 
+    public List<(ulong DiscordUserId, string UserNameInKog)> GetPlayersOfKog()
+    {
+        var result = new List<(ulong DiscordUserId, string UserNameInKog)>();
+        var players = KogPlayers.Find(_ => true).Project(x => new { x.DiscordUserId, x.UserNameInKog }).ToList();
+
+        foreach (var player in players)
+        {
+            result.Add((player.DiscordUserId, player.UserNameInKog));
+        }
+
+        return result;
+    }
+
     #endregion 查詢資料
 
     #region 更新資料

@@ -7,16 +7,16 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-namespace DiscordBot.Commands;
+namespace DiscordBot.Modules;
 
 [Group("kog", "King of Gores 相關的指令")]
-public class KogCommands : InteractionModuleBase<SocketInteractionContext>
+public class KogModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly MongoKogRepository _repository;
     private readonly AppSettings _settings;
-    private readonly ILogger<KogCommands> _logger;
+    private readonly ILogger<KogModule> _logger;
 
-    public KogCommands(MongoKogRepository repository, IOptions<AppSettings> settings, ILogger<KogCommands> logger)
+    public KogModule(MongoKogRepository repository, IOptions<AppSettings> settings, ILogger<KogModule> logger)
     {
         _repository = repository;
         _settings = settings.Value;
@@ -320,6 +320,23 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         await RespondAsync(embed: embed);
     }
 
+    [RequireRole("KoG")]
+    [SlashCommand("players-of-kog", "搜尋已註冊的玩家")]
+    public async Task SearchPlayersOfKog()
+    {
+        var players = _repository.GetPlayersOfKog();
+        var embed = new EmbedBuilder()
+                .WithTitle("已註冊的玩家")
+                .WithDescription(string.Join("\n", players.Select(x =>
+                {
+                    var user = Context.Guild!.GetUser(x.DiscordUserId);
+                    return $"{user?.Mention ?? "Deleted User"} （{x.UserNameInKog}）";
+                })))
+                .WithColor(Color.Purple)
+                .Build();
+        await RespondAsync(embed: embed, ephemeral: true);
+    }
+
     #endregion 搜尋玩家資料
 
     #region 搜尋多個玩家之間未完成的地圖
@@ -418,7 +435,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
                         {Context.User.Mention} 查詢玩家之間未完成的地圖
                         ```
                         選擇的難度：{difficulty}
-                        選擇的星數：{(star == 0 ? "not limited" : ConvertToStarRating((int)star))}
+                        選擇的星數：{(star == 0 ? "not limited" : ConvertToStarRating(star))}
                         選擇的玩家：
                         {string.Join("\n", players.Select((x, i) => $"{i + 1}. {x}"))}
                         ```
