@@ -5,7 +5,7 @@ public class PointType
     public int Rank { get; set; }
     public string Name { get; set; } = default!;
     public int TPoints { get; set; }
-    public int PvPpoints { get; set; }
+    public float PvPpoints { get; set; }
     public int Points { get; set; }
     public int Seasonpoints { get; set; }
     public int RewardIndex { get; set; }

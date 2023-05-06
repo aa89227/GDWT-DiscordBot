@@ -37,7 +37,7 @@ public class InteractionHandler
             var context = new SocketInteractionContext(_client, interaction);
 
             // 限制在某個頻道
-            if (interaction.ChannelId != _settings.KogCommandChannelId)
+            if (interaction.ChannelId != _settings.KogCommandChannelId && interaction.ChannelId != _settings.LogChannelId)
             {
                 var channel = context.Guild!.GetTextChannel(_settings.KogCommandChannelId);
                 await interaction.RespondAsync($"請在{channel.Mention}使用此指令", ephemeral: true); // mention channel

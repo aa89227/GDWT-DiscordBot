@@ -15,8 +15,13 @@ using IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         var config = new ConfigurationBuilder()
+#if DEBUG
             .AddUserSecrets<Program>()
+#else
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+#endif
             .Build();
+        
         services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
         {
             AlwaysDownloadUsers = true,

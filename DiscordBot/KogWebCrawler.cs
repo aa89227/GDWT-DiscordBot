@@ -1,4 +1,5 @@
-﻿using DiscordBot.Repositories;
+﻿using Amazon.Runtime.Internal.Endpoints.StandardLibrary;
+using DiscordBot.Repositories;
 using HtmlAgilityPack;
 using System.Text.Json;
 
@@ -10,22 +11,24 @@ public class KogWebCrawler
     {
         try
         {
-            var url = "https://kog.tw/api.php";
+            // 要先打一次get api，不然kog的post api不會動
+            await MakeGetRequestAsync($"https://kog.tw/get.php?p=players&p=players&player={playerName}"); 
             var requestData = new { type = "players", player = playerName };
             var jsonContent = JsonSerializer.Serialize(requestData);
-            var responseJson = await MakePostRequestAsync(url, jsonContent);
+            var responseJson = await MakePostRequestAsync(jsonContent);
             var responseData = JsonSerializer.Deserialize<Response>(responseJson);
             var data = JsonSerializer.Deserialize<KogUserData>(responseData!.data)!;
             return data;
         }
         catch
         {
-            return null;
+            throw;
         }
     }
 
-    private static async Task<string> MakePostRequestAsync(string url, string jsonContent)
+    private static async Task<string> MakePostRequestAsync(string jsonContent)
     {
+        var url = "https://kog.tw/api.php";
         using var httpClient = new HttpClient();
         var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
         var response = await httpClient.PostAsync(url, content);

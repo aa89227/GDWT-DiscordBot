@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using DiscordBot.Repositories;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -13,11 +14,13 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly MongoKogRepository _repository;
     private readonly AppSettings _settings;
+    private readonly ILogger<KogCommands> _logger;
 
-    public KogCommands(MongoKogRepository repository, IOptions<AppSettings> settings)
+    public KogCommands(MongoKogRepository repository, IOptions<AppSettings> settings, ILogger<KogCommands> logger)
     {
         _repository = repository;
         _settings = settings.Value;
+        _logger = logger;
     }
 
     #region 更新資料
@@ -66,9 +69,13 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
             return;
         }
         var logChannel = Context.Client.GetChannel(_settings.LogChannelId) as ISocketMessageChannel;
-        var kogUserData = await KogWebCrawler.GetUserDataAsync(username_in_kog);
-        if (kogUserData is null)
+        KogWebCrawler.KogUserData? kogUserData;
+        try
         {
+            kogUserData = await KogWebCrawler.GetUserDataAsync(username_in_kog);
+        }
+        catch (Exception ex) { 
+            _logger.LogError(ex, "無法取得 KOG 使用者資訊");
             await ModifyOriginalResponseAsync(x => x.Content = $"註冊失敗! 請確認您的名稱是否正確，並等待管理員處理註冊資料");
             await HandleRegistrationFailure(username_in_kog, result, logChannel);
             return;
@@ -133,7 +140,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         // 建立刪除註冊訊息的按鈕
         var deleteButton = new ButtonBuilder()
             .WithLabel("刪除註冊訊息")
-            .WithCustomId($"kog-register-delete-{result.RegisterationId}")
+            .WithCustomId($"kog-delete-registeration-{result.RegisterationId}")
             .WithStyle(ButtonStyle.Danger);
         // 建立失敗時的組件
         var failComponent = new ComponentBuilder()
@@ -183,7 +190,7 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
     /// 刪除註冊訊息 ComponentInteraction。當使用者按下特定自訂 ID 的按鈕時觸發。
     /// </summary>
     /// <param name="registrationId">註冊編號</param>
-    [ComponentInteraction("kog-register-delete-*", true)]
+    [ComponentInteraction("kog-delete-registeration-*", true)]
     public async Task DeleteRegisteration(string registrationId)
     {
         await DeferAsync();

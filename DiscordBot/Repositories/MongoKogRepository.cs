@@ -130,8 +130,9 @@ public class MongoKogRepository
         {
             playerData = await KogWebCrawler.GetUserDataAsync(registration.UserNameInKog);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, $"Failed to get user data of {registration.UserNameInKog}");
             return new($"名稱【{registration.UserNameInKog}】無法被註冊");
         }
         // 更改註冊申請，將 <see cref="KogPlayerRegisteration.Approver"/> 設為 <paramref name="approver"/>，並將 <see cref="KogPlayerRegisteration.IsApproved"/> 設為 true
