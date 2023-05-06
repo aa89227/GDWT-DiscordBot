@@ -19,7 +19,7 @@ public class KogWebCrawler
             KogUserData data = JsonSerializer.Deserialize<KogUserData>(response!.Data)!;
             return data;
         }
-        catch (JsonException ex) 
+        catch (JsonException ex)
         {
             if (ex.InnerException!.Message.Contains("Cannot get the value of a token type 'StartArray' as a string."))
             {
@@ -101,6 +101,7 @@ public class KogWebCrawler
     {
         [JsonPropertyName("points")]
         public PointType Points { get; set; } = default!;
+
         [JsonPropertyName("finishedMaps")]
         public FinishedMap[] FinishedMaps { get; set; } = default!;
     }
@@ -109,6 +110,7 @@ public class KogWebCrawler
     {
         [JsonPropertyName("status")]
         public int Status { get; set; }
+
         [JsonPropertyName("data")]
         public string Data { get; set; } = default!;
     }

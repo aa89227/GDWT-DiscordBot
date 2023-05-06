@@ -74,7 +74,8 @@ public class KogCommands : InteractionModuleBase<SocketInteractionContext>
         {
             kogUserData = await KogWebCrawler.GetUserDataAsync(username_in_kog);
         }
-        catch (Exception ex) { 
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "無法取得 KOG 使用者資訊");
             await ModifyOriginalResponseAsync(x => x.Content = $"註冊失敗! 請確認您的名稱是否正確，並等待管理員處理註冊資料");
             await HandleRegistrationFailure(username_in_kog, result, logChannel);

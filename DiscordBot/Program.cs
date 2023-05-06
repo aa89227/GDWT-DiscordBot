@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+
 using IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
@@ -22,7 +23,7 @@ using IHost host = Host.CreateDefaultBuilder(args)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
 #endif
             .Build();
-        
+
         services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig
         {
             AlwaysDownloadUsers = true,
@@ -67,7 +68,6 @@ using IHost host = Host.CreateDefaultBuilder(args)
                 {
                     new Karambolo.Extensions.Logging.File.LogFileOptions { Path = "<date:yyyy-MM-dd>.log",  }
                 };
-
             });
         });
         services.AddHostedService<ScheduledService>();

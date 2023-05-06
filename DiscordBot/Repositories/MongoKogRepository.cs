@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -204,7 +203,7 @@ public class MongoKogRepository
         {
             return null;
         }
-        return new KogPlayerInfo(usernameInKog, player.Points.Rank, player.Points.Points,  player.Points.Seasonpoints);
+        return new KogPlayerInfo(usernameInKog, player.Points.Rank, player.Points.Points, player.Points.Seasonpoints);
     }
 
     /// <summary>

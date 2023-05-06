@@ -33,6 +33,7 @@ public class InteractionHandler
         _commands.ContextCommandExecuted += ContextCommandExecuted;
         _commands.ComponentCommandExecuted += ComponentCommandExecuted;
     }
+
     private static Task ComponentCommandExecuted(ComponentCommandInfo arg1, IInteractionContext arg2, IResult arg3) => Task.CompletedTask;
 
     private static Task ContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2, IResult arg3) => Task.CompletedTask;
