@@ -329,8 +329,7 @@ public class KogModule : InteractionModuleBase<SocketInteractionContext>
                 .WithTitle("已註冊的玩家")
                 .WithDescription(string.Join("\n", players.Select(x =>
                 {
-                    var user = Context.Guild!.GetUser(x.DiscordUserId);
-                    return $"{user?.Mention ?? "Deleted User"} （{x.UserNameInKog}）";
+                    return $"<@{x.DiscordUserId}> （{x.UserNameInKog}）";
                 })))
                 .WithColor(Color.Purple)
                 .Build();

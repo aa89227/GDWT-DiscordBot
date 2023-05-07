@@ -277,7 +277,6 @@ public class MongoKogRepository
         {
             result.Add((player.DiscordUserId, player.UserNameInKog));
         }
-
         return result;
     }
 
