@@ -1,5 +1,4 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using DiscordBot;
@@ -39,12 +38,14 @@ using IHost host = Host.CreateDefaultBuilder(args)
             try
             {
                 var client = new MongoClient(appSettings.MongoDBURL);
-                _logger.LogInformation("Successfully connected to mongo database KingOfGores");
+                _logger.LogInformation("嘗試連結到資料庫");
+                client.StartSession();
+                _logger.LogInformation("成功連結到資料庫");
                 return client;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to connect to mongo database");
+                _logger.LogError(ex, "無法連結到資料庫");
                 throw;
             }
         });
@@ -71,52 +72,9 @@ using IHost host = Host.CreateDefaultBuilder(args)
             });
         });
         services.AddHostedService<ScheduledService>();
+        services.AddHostedService<DiscordBotService>();
     })
     .Build();
 
-await RunAsync(host);
-
-async Task RunAsync(IHost host)
-{
-    using IServiceScope scope = host.Services.CreateScope();
-    IServiceProvider services = scope.ServiceProvider;
-    AppSettings settings = services.GetRequiredService<IOptions<AppSettings>>().Value;
-
-    var client = services.GetRequiredService<DiscordSocketClient>();
-    var slashCommands = services.GetRequiredService<InteractionService>();
-    await services.GetRequiredService<InteractionHandler>().InitializeAsync();
-
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    Task LogAsync(LogMessage message)
-    {
-        if (message.Severity == LogSeverity.Error)
-            logger.LogError("[General/{MessageSeverity}] {Message}", message.Severity, message);
-        else if (message.Severity == LogSeverity.Warning)
-            logger.LogWarning("[General/{MessageSeverity}] {Message}", message.Severity, message);
-        else
-            logger.LogInformation("[General/{MessageSeverity}] {Message}", message.Severity, message);
-
-        return Task.CompletedTask;
-    }
-
-    client.Log += LogAsync;
-    slashCommands.Log += LogAsync;
-    client.Ready += async () =>
-    {
-        try
-        {
-#if DEBUG
-            await slashCommands.RegisterCommandsToGuildAsync(1030466547325607936);
-#else
-            await slashCommands.RegisterCommandsGloballyAsync();
-#endif
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("{Error Message}", ex.Message);
-        }
-    };
-    await client.LoginAsync(TokenType.Bot, settings.BotToken);
-    await client.StartAsync();
-    host.Run();
-}
+await host.RunAsync();
+await Task.Delay(-1);
